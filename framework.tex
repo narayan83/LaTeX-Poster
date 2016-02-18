@@ -1,0 +1,128 @@
+%% Framework for BrainTrack%%
+\documentclass{article}
+
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,shadows}
+\usepackage{amsmath,bm,times}
+\newcommand{\mx}[1]{\mathbf{\bm{#1}}} % Matrix command
+\newcommand{\vc}[1]{\mathbf{\bm{#1}}} % Vector command
+
+\begin{document}
+% Define the layers to draw the diagram
+\pgfdeclarelayer{background}
+\pgfdeclarelayer{foreground}
+\pgfsetlayers{background,main,foreground}
+\pagenumbering{gobble}
+% Define block styles used later
+
+\tikzstyle{sensor}=[draw, color=black!100,very thick, fill=blue!20, text width=5em, 
+    text centered, minimum height=2.5em,drop shadow]
+\tikzstyle{ann} = [above, text width=5em, text centered]
+\tikzstyle{wa} = [sensor, text width=8em, fill=red!20, 
+    minimum height=15em, rounded corners, drop shadow]
+\tikzstyle{pp} = [sensor, text width=8em, fill=blue!20, 
+    minimum height=15em, rounded corners, drop shadow]
+\tikzstyle{sc} = [sensor, text width=7.5em, fill=orange!20, 
+    minimum height=10em, rounded corners, drop shadow]
+\tikzstyle{conn}=[draw, color=black!100,very thick, fill=red!20, text width=7.5em, 
+text centered, minimum height=10em,drop shadow]
+\tikzstyle{bem}=[draw, color=black!100,very thick, fill=orange!20, text width=7.5em, 
+text centered, minimum height=10em,drop shadow,rounded corners]
+\tikzstyle{mri}=[draw, color=black!100,very thick, fill=orange!20, text width=7.5em, 
+text centered, minimum height=10em,drop shadow,rounded corners]
+\tikzstyle{sensorloc}=[draw, color=black!100,very thick, fill=orange!20, text width=15em, 
+text centered, minimum height=5em,drop shadow]
+
+% Define distances for bordering
+\def\blockdist{2.3}
+\def\edgedist{2.5}
+
+\begin{center}
+\begin{tikzpicture}
+
+    \node [draw] (pp) [pp] at (-3,0) {Data preprocessing (FieldTrip)};
+   \path (pp.west)+(-2,1.5) node (asr1) [sensor] {$y_t^1$};
+    \path (pp.west)+(-2,0.5) node (asr2)[sensor] {$y_t^2$};
+    \path (pp.west)+(-2,-1.0) node (dots)[ann] {$\vdots$}; 
+    \path (pp.west)+(-2,-2.0) node (asr3)[sensor] {$y_t^N$};    
+  
+    
+
+    \path [draw,ultra thick,->] (asr1.east) -- node {} (-4.5,1.5) ;
+    \path [draw,ultra thick, ->] (asr2.east) -- node  {} (-4.5,.5);
+    \path [draw,ultra thick, ->] (asr3.east) -- node {} (-4.5,-2);
+    \path (pp.east)+(3.5,0) node (wa) [wa] {Spatio-temporal marginalized particle filter};
+    \path [draw, ultra thick,->] (pp.east) -- node [above] {}%\Large $Y_{1:t}$} 
+        (wa.west);
+   \path (wa.east)+(\blockdist,0) node (vote) [conn] {Estimated posterior probability distribution \\  $p(X_t,\theta_t | Y_{1:t})$ };
+   \path [draw, ultra thick,->] (wa.east) -- node [above] {} 
+        (vote.west);
+
+    \path (asr3.north) +(2,-\blockdist) node (asrs) {\textbf{Preprocessing of $N$-channel M/EEG data}};
+  
+    \begin{pgfonlayer}{background}
+        \path (asr1.west |- asr1.north)+(-0.5,1.0) node (a) {};
+        \path (asr3.south -| asr3.east)+(+0.5,-1.0) node (b) {};
+        \path (vote.east |- asrs.east)+(+0.5,-0.5) node (c) {};
+          
+        \path[fill=yellow!20,rounded corners, draw=black!50, dashed]
+            (a) rectangle (b);           
+        \path (asr1.north west)+(-0.2,0.2) node (a) {};
+            
+    \end{pgfonlayer}
+    
+    \path (wa.south) +(2,-1.2) node (asrs) {\textbf{Inversion and connectivity estimation}};
+  
+    \begin{pgfonlayer}{background}
+        \path (asr1.west |- asr1.north)+(-1,1.5) node (a) {};
+        \path (pp.south -| pp.east)+(+0.5,-2.0) node (b) {};
+        \path (vote.east |- asrs.east)+(+0.3,-1) node (c) {};
+          
+        \path[fill=green!20,rounded corners, draw=black!100, dashed,ultra thick, fill opacity=0.3]
+            (a) rectangle (b);           
+        \path (asr1.north west)+(-0.2,0.2) node (a) {};
+            
+    \end{pgfonlayer}
+    
+    
+      \begin{pgfonlayer}{background}
+        \path (wa.west |- wa.north)+(-0.5,0.8) node (a) {};
+        \path (vote.south -| vote.east)+(+0.5,-2.8) node (b) {};
+        \path (vote.east |- asrs.east)+(+0.3,-1) node (c) {};
+          
+        \path[fill=green!20,rounded corners, draw=black!100, dashed,ultra thick, fill opacity=0.3]
+            (a) rectangle (b);           
+        \path (wa.north west)+(-0.2,0.2) node (a) {};
+            
+    \end{pgfonlayer}
+    
+     \path (wa.north)+(0,5) node (syscomb) [sc] {Lead field matrix \\ (MNE)};
+     \path [draw, ultra thick,->] (syscomb.south) -- node [pos=0.65,right] {}%\Large $\mathbf{L}$} 
+        (wa.north);
+     \path (syscomb.west)+(-\blockdist,0) node (bem) [bem] {BEM Head model\\ (MNE)};
+     \path (bem.west)+(-\blockdist,0) node (mri) [mri] {Segmentation of MR images (FreeSurfer)};  
+
+     \path [draw, ultra thick,->] (mri.east) -- node [above] {} 
+        (bem.west);
+        
+     \path [draw, ultra thick,->] (bem.east) -- node [above] {} 
+        (syscomb.west);
+        
+
+    \path (syscomb.south) +(-3,-1) node (sct) {\textbf{Forward modelling}};
+    
+     \path (bem.north)+(0,3) node (sensorloc) [sensorloc] {M/EEG sensor locations};
+     \path [draw, ultra thick,->] (sensorloc.south) -- node [above] {} 
+        (bem.north);
+        
+            \begin{pgfonlayer}{background}
+        \path (mri.west)+(-0.5,6) node (g) {};
+        \path (bem.east |- syscomb.south)+(4.5,-1.5) node (h) {};
+         
+        \path[fill=green!20,rounded corners, draw=black!100, dashed, ultra thick, fill opacity=0.3]
+            (g) rectangle (h);                
+    \end{pgfonlayer}
+        
+\end{tikzpicture}
+\end{center}
+\end{document}
